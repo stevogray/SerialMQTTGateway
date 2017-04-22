@@ -4,7 +4,7 @@ Python program to convert serial traffic to MQTT and vice versa.
 Serial data arrives as comma delimited in the following form (comma delimited, colons separate MQTT topic and message):
 [sending_node_number],[topic]:[message],[topic]:[message]
 using the topic and message from the serial read, the MQTT topics are updated:
-sensors/'</[sending_node_number]/[topic] [message]
+sensors/</[sending_node_number]/[topic] [message]
 
 MQTT topic sensors/>/# is subscribed to. MQTT Topics should be:
 sensors/>/[nodeid] [message]
