@@ -87,9 +87,9 @@ def on_publish(client, userdata, mid):
 #called on program exit
 def cleanup():
     LOGGER.info("Ending and cleaning up")
-	#Close Serial
+    #Close Serial
     ser.close()
-	#Disconnect from MQTT
+    #Disconnect from MQTT
     mqttc.loop_stop()
     mqttc.disconnect()
     sys.exit(0)
