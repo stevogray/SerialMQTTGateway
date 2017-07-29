@@ -30,22 +30,23 @@ import logging
 import logging.handlers
 
 ##############Configuration##############
-#MQTT settings
-broker="10.88.87.180"
-port=1883
-#Serial port settings
-#Now taken from the settings file
-
-baud=115200
+#Settings have been moved to the settings.py file so that different setting can exist between the development platform
+#and the Pi Gatway.
 #########################################
 
-logging.basicConfig(level=logging.DEBUG)
+
+##############Logging Settings##############
+#Added a logging routine so when the gateway is run as a process on the PI you can see what is going on.  Main change you
+#you might want to make is the logging level.
+
 # Change the above to .DEBUG for message infomation and .INFO for runtime minimal messages
-
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
-LOGGER.info('Starting up Pi/Moteino Gateway')
 
-LOG_LEVEL = logging.INFO  # Could be e.g. "DEBUG" or "WARNING"
+# Change this to as well.  Not entirely sure which one is controlling this.  Sorry!
+LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
+
+
 # Configure logging to log to a file, making a new file at midnight and keeping the last 3 day's data
 # Give the logger a unique name (good practice)
 logger = logging.getLogger(__name__)
@@ -59,6 +60,9 @@ formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 # Attach the handler to the logger
 logger.addHandler(handler)
+#########################################
+
+LOGGER.info('Starting up Pi/Moteino Gateway')
 
 #MQTT callbacks
 #the callback for when the client receives a CONNACK response from the server.
@@ -99,7 +103,7 @@ try:
     LOGGER.info('Connecting to serial device %s', s.SERIALDEV)
     ser = serial.Serial(
         port=s.SERIALDEV,
-        baudrate=baud,
+        baudrate=s.BAUD,
         parity=serial.PARITY_NONE,
 #        stopbits=serial.STOPBITS_ONE,
 #        timeout=0.5
@@ -119,7 +123,7 @@ try:
     mqttc.on_message = on_message
     mqttc.on_publish = on_publish
     #connect to broker (blocking function, callback when successful, callback subscribes to topics)
-    mqttc.connect(broker, port, 60)
+    mqttc.connect(s.BROKER, s.PORT, 60)
     #start background thread to monitor MQTT. Recieved messages will be handled by on_message function
     mqttc.loop_start()
 
