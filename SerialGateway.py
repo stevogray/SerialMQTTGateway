@@ -5,18 +5,25 @@
 # David deMarco 2017/07/9 - Updated to Python 3.5 and added logging
 #
 # Serial data arrives as comma delimited in the following form (comma delimited, colons separate MQTT topic and message):
-# <sending_node_number>,<topic>:<message>,<topic>:<message>
+# {sending_node_number},{topic}:{message},{topic}:{message}
+# eg: 5,Temperature:5,Battery:LOW
 # using the topic and message from the serial read, the MQTT topics are updated:
-# sensors/</<sending_node_number><topic> <message>
+# sensors/</[sending_node_number]/{topic} {message}
+# eg from above:
+# Topic: sensors/</5/Temperature Message: 20.6
+# Topic: sensors/</5/Battery     Message: LOW
 #
 # MQTT topic sensors/>/# is subscribed to. MQTT Topics should be:
-# sensors/>/<nodeid> <message>
+# sensors/>/{nodeid} {message}      or
+# sensors/>/{nodeid}/{topic} {message}
 # Any new data is sent to serial as:
-# <nodeid>:<message>
-# Which the attached arduino broadcasts over the wireless network.
-# Anything destined for node 1 (the gateway ardunio) is written to serial without sending mode. 
+# <{nodeid}:{topic}:{message}>
+# eg Topic: sensors/>/5/LED Message:ON would be sent to serial as:
+# <5:LED:ON>
+# Which the attached arduino broadcasts over the wireless network. The code in the arduino should look for the start marker "<" and the end marker ">".
+# Any message destined for node 1 (the gateway ardunio) is written to serial without sending node.
 #
-# Developed for use with Moteinos https://lowpowerlab.com/guide/moteino/ using a slightly modified 
+# Developed for use with Moteinos https://lowpowerlab.com/guide/moteino/ using a modified 
 # gateway sketch (to format serial data as comma delimited).
 #
 # Primary functionality from Python MQTT client from Eclipse Paho http://www.eclipse.org/paho/
@@ -25,33 +32,28 @@
 import paho.mqtt.client as mqtt
 import serial
 import sys
-import settings as s
+import SerialGatewaySettings as s
 import logging
 import logging.handlers
 
 ##############Configuration##############
-#Settings have been moved to the settings.py file so that different setting can exist between the development platform
-#and the Pi Gatway.
+#Settings are in the settings.py file so that different setting can exist between the development platform and the Pi Gatway.
 #########################################
 
 
 ##############Logging Settings##############
 #Added a logging routine so when the gateway is run as a process on the PI you can see what is going on.  Main change you
-#you might want to make is the logging level.
+#you might want to make is the logging level, in the settings file.
 
 # Change the above to .DEBUG for message infomation and .INFO for runtime minimal messages
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 
-# Change this to as well.  Not entirely sure which one is controlling this.  Sorry!
-LOG_LEVEL = logging.DEBUG  # Could be e.g. "DEBUG" or "WARNING"
-
-
 # Configure logging to log to a file, making a new file at midnight and keeping the last 3 day's data
 # Give the logger a unique name (good practice)
 logger = logging.getLogger(__name__)
-# Set the log level to LOG_LEVEL
-logger.setLevel(LOG_LEVEL)
+# Set the log level to LOG_LEVEL (read from settings file)
+logger.setLevel(s.LOG_LEVEL)
 # Make a handler that writes to a file, making a new file at midnight and keeping 3 backups
 handler = logging.handlers.TimedRotatingFileHandler(s.LOG_FILENAME, when="midnight", backupCount=3)
 # Format each log message like this
@@ -62,12 +64,12 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 #########################################
 
-LOGGER.info('Starting up Pi/Moteino Gateway')
+logger.critical('Starting up Pi/Moteino Gateway')
 
 #MQTT callbacks
 #the callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    LOGGER.info("Connected to MQTT broker with result code "+str(rc))
+    logger.error("Connected to MQTT broker with result code "+str(rc))
     # Subscribing in on_connect() means that if we lose the connection and
     # reconnect then subscriptions will be renewed.
     client.subscribe("sensors/>/#")
@@ -76,12 +78,19 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     #A message has been posted to sensors/>/#.
 	#If node number is 1, pass through msg.payload
+    #If topic has a fourth level, add this to the serial string
     list1=msg.topic.split("/")
     if len(list1)==3 and list1[2]=="1":
-        ser.write(msg.payload)
-    if len(list1)==3 and list1[2]!="1":
-        sendstr=(list1[2]+":"+msg.payload)
-        LOGGER.info ("Send string: "+ sendstr)
+        sendstr=("<"+msg.payload+">")
+        ser.write(sendstr)
+        logger.info("Send serial to gateway: "+ sendstr)
+    elif len(list1)==3:
+        sendstr=("<"+list1[2]+":"+msg.payload+">")
+        logger.info("Send serial: "+ sendstr)
+        ser.write(sendstr)
+    elif len(list1)==4:
+        sendstr=("<"+list1[2]+":"+list1[3]+":"+msg.payload+">")
+        logger.info("Send serial: "+ sendstr)
         ser.write(sendstr)
 
 def on_publish(client, userdata, mid):
@@ -90,7 +99,7 @@ def on_publish(client, userdata, mid):
 
 #called on program exit
 def cleanup():
-    LOGGER.info("Ending and cleaning up")
+    logger.info("Ending and cleaning up")
     #Close Serial
     ser.close()
     #Disconnect from MQTT
@@ -100,7 +109,7 @@ def cleanup():
 
 #connect to serial port
 try:
-    LOGGER.info('Connecting to serial device %s', s.SERIALDEV)
+    logger.info('Connecting to serial device %s', s.SERIALDEV)
     ser = serial.Serial(
         port=s.SERIALDEV,
         baudrate=s.BAUD,
@@ -109,7 +118,7 @@ try:
 #        timeout=0.5
 )
 except:
-    LOGGER.info("Failed to open serial port")
+    logger.critical("Failed to open serial port")
     sys.exit(-1)
 
 #connect to MQTT and main program loop
@@ -148,7 +157,7 @@ try:
                     mqttc.publish(topic, data[1])
                     logger.info('topic: %s Data: %s ', topic, data[1])
         except Exception as e:
-            logger.info('Error parsing data %s',format(str(e)))
+            logger.warning('Error parsing data %s',format(str(e)))
             pass
 except KeyboardInterrupt:
     cleanup()
