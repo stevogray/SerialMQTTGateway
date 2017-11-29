@@ -6,7 +6,7 @@
 #
 # Serial data arrives as comma delimited in the following form (comma delimited, colons separate MQTT topic and message):
 # {sending_node_number},{topic}:{message},{topic}:{message}
-# eg: 5,Temperature:5,Battery:LOW
+# eg: 5,Temperature:20.6,Battery:LOW
 # using the topic and message from the serial read, the MQTT topics are updated:
 # sensors/</[sending_node_number]/{topic} {message}
 # eg from above:
@@ -18,7 +18,7 @@
 # sensors/>/{nodeid}/{topic} {message}
 # Any new data is sent to serial as:
 # <{nodeid}:{topic}:{message}>
-# eg Topic: sensors/>/5/LED Message:ON would be sent to serial as:
+# eg Topic: sensors/>/5/LED Message:ON or Topic: sensors/>/5 Message:LED:ON would be sent to serial as:
 # <5:LED:ON>
 # Which the attached arduino broadcasts over the wireless network. The code in the arduino should look for the start marker "<" and the end marker ">".
 # Any message destined for node 1 (the gateway ardunio) is written to serial without sending node.
