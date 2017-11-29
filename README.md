@@ -7,7 +7,7 @@ Serial data arrives as comma delimited in the following form (comma delimited, c
 ```
 example:
 ```
-5,Temperature:5,Battery:LOW
+5,Temperature:20.6,Battery:LOW
 ```
 using the topic and message from the serial read, the MQTT topics are updated:
 ```
@@ -22,14 +22,14 @@ Topic: sensors/</5/Battery     Message: LOW
 MQTT topic sensors/>/# is subscribed to. MQTT Topics should be:
 ```
 sensors/>/{nodeid} {message}
-or
+  or
 sensors/>/{nodeid}/{topic} {message}
 ```
 Any new data is sent to serial as:
 ```
 <{nodeid}:{topic}:{message}>
 ```
-eg Topic: sensors/>/5/LED Message:ON would be sent to serial as:
+eg Topic: sensors/>/5/LED Message:ON or Topic: sensors/>/5 Message:LED:ON would be sent to serial as:
 ```
 <5:LED:ON>
 ```
