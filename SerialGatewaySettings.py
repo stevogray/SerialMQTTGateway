@@ -11,6 +11,9 @@ SERIALDEV='/dev/cu.usbserial-A603G0H1'
 #Change to the appropriate log file location on the target system.
 LOG_FILENAME = "/Users/david/PycharmProjects/SerialMQTTGateway/gateway.log"
 #LOG_FILENAME = "/home/pi/gateway.log"
+#Log levels are CRITICAL (50), ERROR (40), WARNING (30), INFO (20), DEBUG (10), NOTSET (0)
+#Any message with importance of this level or higher will be logged
+LOG_LEVEL = "WARNING"
 
 #MQTT Server Settings - Most likely the same for test and prod, but lets be consistent with the settings.
 BROKER="10.88.87.180"
