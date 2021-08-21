@@ -156,26 +156,26 @@ try:
     #main program loop: read serial and publish
     while 1:
         serialreadline=ser.readline()
-        logger.debug(serialreadline)
+        logger.debug("Raw serial string: %s",serialreadline)
         items=serialreadline.decode().split(",")
 
         #Format of serial line is:
         #<sending_node_number>,<topic>:<payload>,<topic>:<payload>, etc, <RSSI>:<value>,ACK:<sent or not>
         try:
             if len(items)==1:
-                logger.warning(serialreadline)
+                logger.warning("Badly formed serial: %s",serialreadline)
             else:
                 nodenum=items[0]
                 #crash out of the try if the first item is not a number
                 int(nodenum)
-                logger.debug("From node number: %s", nodenum)
+                logger.debug("Serial in from node number: %s is: %s", nodenum, items[1:])
                 for item in items[1:]:
                     if ":" in item:
                         data=item.split(":")
                         #first element is topic, second is payload
                         topic="sensors/</"+nodenum+"/"+data[0].strip()
                         mqttc.publish(topic, data[1].strip())
-                        logger.info("Received data: topic: %s Data: %s ", topic, data[1].strip())
+                        logger.info("Published to MQTT topic: %s Data: %s ", topic, data[1].strip())
         except Exception as e:
             logger.warning('Error parsing data %s',format(str(e)))
             pass
