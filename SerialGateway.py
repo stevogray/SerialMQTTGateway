@@ -36,6 +36,7 @@ import paho.mqtt.client as mqtt
 import serial
 import sys
 import SerialGatewaySettings as s
+import traceback
 import logging
 import logging.handlers
 
@@ -181,4 +182,8 @@ try:
 except KeyboardInterrupt:
     cleanup()
 except RuntimeError:
+    cleanup()
+except Exception as e:
+    #log errors and exit
+    logging.exception(traceback, format_exc())
     cleanup()
